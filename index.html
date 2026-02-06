@@ -20,7 +20,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Shop API -->
-    <script src="/shop-api.js"></script>
+    <script src="shop-api.js" defer></script>
     
     <style>
         * {
@@ -792,11 +792,27 @@
             });
         });
         
-        // Initialize ShopAPI
-        const shopAPI = new ShopAPI({
-            workerUrl: "https://quanlykho-api.nguyenxuancuongk56.workers.dev", // Thay bằng URL Worker thực tế
-            publicApiKey: "bb90c3e7-c5bf-4276-9539-3a509667c540" // Thay bằng API key thực tế
-        });
+        // Initialize ShopAPI - ensure it's loaded
+        let shopAPI;
+        function initShopAPI() {
+            if (typeof ShopAPI === 'undefined') {
+                console.error('ShopAPI is not loaded. Make sure shop-api.js is included.');
+                return null;
+            }
+            return new ShopAPI({
+                workerUrl: "https://quanlykho-api.nguyenxuancuongk56.workers.dev",
+                publicApiKey: "bb90c3e7-c5bf-4276-9539-3a509667c540"
+            });
+        }
+        
+        // Try to initialize immediately or wait for script to load
+        if (typeof ShopAPI !== 'undefined') {
+            shopAPI = initShopAPI();
+        } else {
+            window.addEventListener('load', function() {
+                shopAPI = initShopAPI();
+            });
+        }
         
         // Form submission - ensure DOM is ready
         function setupContactForm() {
@@ -821,17 +837,26 @@
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang gửi...';
                 
-                try {
-                    const formData = {
-                        name: document.getElementById('name').value,
-                        phone: document.getElementById('phone').value,
-                        email: document.getElementById('email').value || '',
-                        product_type: document.getElementById('product_type').value,
-                        note: document.getElementById('note').value
-                    };
-                    
-                    // Create lead using ShopAPI
-                    const result = await shopAPI.createLead({
+                    try {
+                        // Ensure ShopAPI is initialized
+                        if (!shopAPI) {
+                            shopAPI = initShopAPI();
+                        }
+                        if (!shopAPI) {
+                            alert('Hệ thống đang tải. Vui lòng thử lại sau.');
+                            return;
+                        }
+                        
+                        const formData = {
+                            name: document.getElementById('name').value,
+                            phone: document.getElementById('phone').value,
+                            email: document.getElementById('email').value || '',
+                            product_type: document.getElementById('product_type').value,
+                            note: document.getElementById('note').value
+                        };
+                        
+                        // Create lead using ShopAPI
+                        const result = await shopAPI.createLead({
                         name: formData.name,
                         phone: formData.phone,
                         email: formData.email,
